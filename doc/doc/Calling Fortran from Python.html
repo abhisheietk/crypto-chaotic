@@ -1,0 +1,337 @@
+<!--?xml version="1.0" encoding="utf-8"?-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head>
+<title>Calling Fortran from Python</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="generator" content="Org-mode">
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: 'sh'; }
+  pre.src-bash:before  { content: 'sh'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-R:before     { content: 'R'; }
+  pre.src-perl:before  { content: 'Perl'; }
+  pre.src-java:before  { content: 'Java'; }
+  pre.src-sql:before   { content: 'SQL'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Calling Fortran from Python</h1>
+<p>
+<span class="timestamp-wrapper"><span class="timestamp">[2013-04-19]</span></span> (edited <span class="timestamp-wrapper"><span class="timestamp">[2013-09-12]</span></span>)
+</p>
+
+
+<p>
+The way I use here to call Fortran from Python is to make the <a href="http://maurow.bitbucket.org/notes/calling_fortran_from_c.html">Fortran
+code callable from C</a> and then bind that with Cython (version 0.19.1).
+This is what is recommended in <a href="http://fortran90.org/src/best-practices.html#interfacing-with-python">"Fortran best practices"</a>.  There are
+other ways, like <a href="http://www.scipy.org/F2py">F2Py</a> and <a href="http://fwrap.sourceforge.net/">fwrap</a>, but (I think) the former struggles
+with modern Fortran and the latter's development has stalled.  Maybe
+another avenue to pursue could be <a href="http://cffi.readthedocs.org/">CFFI</a>.  In fact, all this linking
+Python to compiled code seems to be quite in a state of flux at the
+moment and this could be outdated soon (or is already!).
+</p>
+
+
+<p>
+I build on the code of <a href="http://maurow.bitbucket.org/notes/calling_fortran_from_c.html">Calling Fortran from C</a>.  The idea is to call
+the subroutine <code>c_calc_num_iter</code> in <a href="http://maurow.bitbucket.org/notes/calling_fortran_from_c.html"><code>mandel\_wrap.f90</code></a> from <a href="http://www.cython.org/">Cython</a>.
+Once that is done, then a call from Python is trivial.  The code I use
+here can be accessed with
+</p>
+<pre class="example">git clone https://maurow@bitbucket.org/maurow/mauro_learning_fortran.git
+cd mauro_learning_fortran
+git checkout v0.2.1
+</pre>
+<p>
+and is in the folder <code>mandel/</code>.
+</p>
+
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">Cython</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+The cython wrapper program wraps the same <a href="http://maurow.bitbucket.org/notes/calling_fortran_from_c.html"><code>mandel\_wrap.f90</code></a> as I used
+in <a href="http://maurow.bitbucket.org/notes/calling_fortran_from_c.html">Calling Fortran from C</a>. 
+</p>
+
+<p>
+<code>pymandel.pyx</code>
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #fa8072;">import</span> numpy <span style="color: #fa8072;">as</span> np
+
+<span style="color: #add8e6;"># </span><span style="color: #add8e6;">this defines the external function's interface.  Why the out needs</span>
+<span style="color: #add8e6;"># </span><span style="color: #add8e6;">to be defined as 'int *out' and not 'int **out' I do not know...</span>
+cdef extern:
+    void c_calc_num_iter(<span style="color: #98fb98; font-weight: bold;">int</span> nre, double *re, <span style="color: #98fb98; font-weight: bold;">int</span> nim, double *im,
+                        <span style="color: #98fb98; font-weight: bold;">int</span> itermax, double escape, <span style="color: #98fb98; font-weight: bold;">int</span> *out)
+
+<span style="color: #fa8072;">def</span> <span style="color: #7fffd4; font-weight: bold;">calc_num_iter</span>(double[::1] re <span style="color: #fa8072;">not</span> <span style="color: #7fffd4;">None</span>,
+                   double[::1] im <span style="color: #fa8072;">not</span> <span style="color: #7fffd4;">None</span>,
+                     <span style="color: #98fb98; font-weight: bold;">int</span> itermax=20, double escape=2.):
+    cdef <span style="color: #98fb98; font-weight: bold;">int</span> nre, nim
+    <span style="color: #7fffd4; font-weight: bold;">nre</span> = <span style="color: #98fb98; font-weight: bold;">len</span>(re)
+    <span style="color: #7fffd4; font-weight: bold;">nim</span> = <span style="color: #98fb98; font-weight: bold;">len</span>(im)
+    <span style="color: #add8e6;"># </span><span style="color: #add8e6;">initialize the output array with cython so Python manages the</span>
+    <span style="color: #add8e6;"># </span><span style="color: #add8e6;">memory:</span>
+    <span style="color: #7fffd4; font-weight: bold;">out</span> = np.empty((nre, nim), dtype=np.int32)
+    cdef <span style="color: #98fb98; font-weight: bold;">int</span> [:,::1] <span style="color: #7fffd4; font-weight: bold;">res</span> = out
+
+    c_calc_num_iter(nre, &amp;re[0], nim, &amp;im[0],
+                     itermax, escape, &amp;res[0,0])
+    <span style="color: #fa8072;">return</span> out
+</pre>
+</div>
+<p>
+Notes:
+</p>
+<ul class="org-ul">
+<li>the <code>cdef extern</code> defines the function signature of the "c"
+function.  In this case the signature is provided by using Fortran's
+<code>iso_c_binding</code> module in <code>mandel_wrap.f90</code>.  I don't know why the
+last argument, a 2D array in Fortran, is just a simple pointer
+(<code>int *out</code>) as opposed to a pointer to a pointer (<code>int **out</code>).
+</li>
+<li>This implementation uses <a href="http://docs.cython.org/src/userguide/memoryviews.html">memoryviews</a> which makes the code nicer than
+the older numpy buffer style.
+</li>
+<li><code>out</code> is a Python variable, so Python manages the memory, which is
+good.
+</li>
+<li><code>cdef int [:,::1] res</code> makes a C-style array, which is good as that
+is whats returned from <code>mandel_wrap.f90</code>.
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">Compiling the Cython extension module</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Compilation was the trickiest part!  
+First make the the <code>*.o</code> files of the Fortran code:
+</p>
+<pre class="example">gfortran -fPIC -c mandel.f90 mandel_wrap.f90 
+</pre>
+<p>
+The <code>-fPIC</code> is needed.
+</p>
+
+<p>
+Then, for cython compilation, it is usually best to make a <code>setup.py</code>
+file:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #fa8072;">from</span> distutils.core <span style="color: #fa8072;">import</span> setup
+<span style="color: #fa8072;">from</span> distutils.extension <span style="color: #fa8072;">import</span> Extension
+<span style="color: #fa8072;">from</span> Cython.Distutils <span style="color: #fa8072;">import</span> build_ext
+<span style="color: #fa8072;">import</span> numpy
+<span style="color: #7fffd4; font-weight: bold;">npy_include_dir</span> = numpy.get_include()
+
+<span style="color: #7fffd4; font-weight: bold;">ext_modules</span> = [Extension(<span style="color: #ffa07a;">"mandel"</span>, [<span style="color: #ffa07a;">"pymandel.pyx"</span>], 
+                         include_dirs = [npy_include_dir],
+                         extra_objects=[<span style="color: #ffa07a;">"mandel.o"</span>, <span style="color: #ffa07a;">"mandel_wrap.o"</span>])]
+
+setup(name = <span style="color: #ffa07a;">'Mandelbrot fractals'</span>,
+      cmdclass = {<span style="color: #ffa07a;">'build_ext'</span>: build_ext},
+      ext_modules = ext_modules)
+</pre>
+</div>
+
+<p>
+The none-standard parts is to include the extra <code>*.o</code> files.  I think
+depending on the Fortran code there might be some libraries missing
+which can be included with <code>libraries=["somelib"]</code>.  To figure out
+which other libraries are needed, run the last gcc command which
+running <code>python setup.py build_ext --inplace</code> spits out but replace
+<code>gcc</code> with (1) <code>gcc -v</code> and (2) <code>gfortran -v</code> and see what the
+difference are.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">Running in Python</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Now Python can be used to plot the Mandelbrot set:
+</p>
+
+<p>
+<code>test.py</code>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-python"><span style="color: #fa8072;">import</span> numpy <span style="color: #fa8072;">as</span> np
+<span style="color: #fa8072;">import</span> pylab <span style="color: #fa8072;">as</span> plt
+<span style="color: #fa8072;">import</span> mandel <span style="color: #fa8072;">as</span> md
+<span style="color: #7fffd4; font-weight: bold;">nn</span> = 1000
+<span style="color: #7fffd4; font-weight: bold;">re</span> = np.linspace(-2.1,1,nn)
+<span style="color: #7fffd4; font-weight: bold;">im</span> = np.linspace(-1.3,1.3,nn+1)
+
+<span style="color: #7fffd4; font-weight: bold;">out</span> = md.calc_num_iter(re, im) <span style="color: #add8e6;"># </span><span style="color: #add8e6;">calling Fortran</span>
+
+plt.imshow(out.T, extent=(re[0],re[-1],im[0],im[-1]))
+plt.show()
+</pre>
+</div>
+
+
+<div class="figure">
+<p><img src="Calling%20Fortran%20from%20Python_files/madel.png" alt="madel.png">
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">Summary of steps</h2>
+<div class="outline-text-2" id="text-4">
+<ol class="org-ol">
+<li>write Fortran module
+</li>
+<li>write wrapper in Fortran to make function available in C
+</li>
+<li>make a Cython wrapper, wrapping between the Fortran/C function and
+Python
+</li>
+<li>call the thing from Python
+</li>
+</ol>
+
+<p>
+Seems quite convoluted…
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+
+
+</body></html>

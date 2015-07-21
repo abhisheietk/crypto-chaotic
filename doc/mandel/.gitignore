@@ -1,0 +1,4 @@
+pymandel.c
+*.so
+cout*
+fout*
