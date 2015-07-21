@@ -20,8 +20,12 @@ do i=1,nosdata
    signal(i)=1.5*sin(0.01*float(i)) +1.0*sin(0.01*sqrt(2.0)*float(i))
 enddo
 do i=1,nosdata
-   encryptedx(i)=signal(i)+xt(i);
+   encryptedx(i)=xt(i); !signal(i)+xt(i);
 enddo 
+!do i=1,nosdata
+!	print *, encryptedx(i)
+!enddo 
+
 !renormscale(1)=minval(encryptedx,nosdata);
 !renormscale(2)=maxval(encryptedx,nosdata);
 !encryptedx=mynorm(encryptedx_pratik_speaker,normscale,numsample)';
@@ -32,6 +36,7 @@ enddo
 xold(1)=rand();
 xold(2)=rand();
 xold(3)=rand();
+print *, xold
 do i=1,ndrop
    call rkm_send(tstep,xold,N);
 enddo 
@@ -40,11 +45,11 @@ do  i=1, nosdata
     xr(i)=xold(1);
 enddo
 do i=1,nosdata
-   recovered(i)=(encryptedx(i)-xr(i));
+   recovered(i)=xr(i); ! (encryptedx(i)-xr(i));
 enddo
 open (3,file="signal_recovered.dat")
 do i=1,nosdata
-   write(3,*)signal(i), recovered(i)
+   write(3,*)signal(i), encryptedx(i), recovered(i)
 enddo
 close(3)
 end
