@@ -8,3 +8,5 @@ setup.cfg
 setup.py
 crypto_chaotic/__init__.py
 crypto_chaotic/lorenz_attractor.py
+docs/.ipynb_checkpoints/0-setup.py-checkpoint.ipynb
+docs/.ipynb_checkpoints/1-crypto-checkpoint.ipynb
