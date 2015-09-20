@@ -2,7 +2,16 @@
 CHANGES.txt
 MANIFEST.in
 README.txt
+<<<<<<< HEAD
 setup.cfg
 setup.py
 crypto-g1/__init__.py
 crypto-g1/gcipher.c
+=======
+installed.txt
+installed1.txt
+setup.cfg
+setup.py
+crypto_chaotic/__init__.py
+crypto_chaotic/lorenz_attractor.py
+>>>>>>> 655c58b7773fd6b35402b30ccae96cedb1dfb2be

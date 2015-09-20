@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIRECTORY_TO_OBSERVE="aeshdl"      #// might want to change this
+DIRECTORY_TO_OBSERVE="crypto_chaotic"      #// might want to change this
 function block_for_change {
   inotifywait -r \
     -e modify,move,create,delete \
