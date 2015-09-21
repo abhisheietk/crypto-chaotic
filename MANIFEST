@@ -2,8 +2,10 @@
 CHANGES.txt
 MANIFEST.in
 README.txt
+installed.txt
 installed1.txt
 setup.cfg
 setup.py
 crypto_chaotic/__init__.py
 crypto_chaotic/lorenz_attractor.py
+crypto_chaotic/modulation.py

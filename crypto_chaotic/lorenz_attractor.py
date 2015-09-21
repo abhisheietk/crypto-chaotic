@@ -75,18 +75,13 @@ def rkm_receive(h, x, xp, N):
     return 0
 
 
-def chaos_commn(N = 3 , nosdata = 40000):
+def chaos_encrypt(signal, N = 3, tstep = 0.0001, ndrop = 15000):
+    nosdata = len(signal)
+    
     xt = np.zeros(nosdata, dtype=np.float64)
-    xr = np.zeros(nosdata, dtype=np.float64)
-    signal = np.zeros(nosdata, dtype=np.float64)
-    recovered = np.zeros(nosdata, dtype=np.float64)
     encryptedx = np.zeros(nosdata, dtype=np.float64)
         
-    tstep = 0.0001
-    ndrop = 15000
-    xold = np.random.uniform(0, 1, size=N)
-    print xold
-    
+    xold = np.random.uniform(0, 1, size=N)    
     for i in range(ndrop):
         rkm_send(tstep, xold, N)
         
@@ -94,17 +89,19 @@ def chaos_commn(N = 3 , nosdata = 40000):
         rkm_send(tstep, xold, N)
         xt[i] = xold[0]
         
-    #signal = np.random.uniform(-1, 1, size=nosdata)
-    for i in range(nosdata):
-        signal[i] = (1.5 * sin(0.01 * i) + 
-                     1.0 * sin(0.01 * sqrt(2.0) * i))
-        
     for i in range(nosdata):
         encryptedx[i] =  signal[i] + xt[i]
+        
+    return encryptedx, xt
+        
+
+def chaos_decrypt(encryptedx, N = 3, tstep = 0.0001, ndrop = 15000):
+    nosdata = len(encryptedx)
     
+    xr = np.zeros(nosdata, dtype=np.float64)
+    recovered = np.zeros(nosdata, dtype=np.float64)
     
     xold = np.random.uniform(0, 1, size=N)
-    print xold
     for i in range(ndrop):
         rkm_send(tstep, xold, N)
         
@@ -114,5 +111,21 @@ def chaos_commn(N = 3 , nosdata = 40000):
         
     for i in range(nosdata):
         recovered[i] = encryptedx[i] - xr[i]
+        
+    return recovered, xr
+
+
+
+def chaos_commn(N = 3 , nosdata = 40000):    
+    
+    signal = np.zeros(nosdata, dtype=np.float64)
+    
+    for i in range(nosdata):
+        signal[i] = (1.5 * sin(0.01 * i) + 
+                     1.0 * sin(0.01 * sqrt(2.0) * i))
+        
+    encryptedx, xt = chaos_encrypt(signal, N = 3, tsteps = 0.0001)    
+    
+    recovered, xr = chaos_decrypt(encryptedx, N = 3, tsteps = 0.0001)
         
     return (signal, encryptedx, recovered, xt, xr)
