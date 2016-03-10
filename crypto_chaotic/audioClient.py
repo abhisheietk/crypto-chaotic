@@ -4,6 +4,8 @@ import pyaudio
 import wave
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
+import numpy as np
+from modulation import drawfft
 
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
@@ -21,10 +23,10 @@ class EchoClientDatagramProtocol(DatagramProtocol):
                          input=True,
                          frames_per_buffer=CHUNK)
 
-    #outputStream = p.open(format=FORMAT,
-    #                      channels=CHANNELS,
-    #                      rate=RATE,
-    #                      output=True)
+    outputStream = p.open(format=FORMAT,
+                          channels=CHANNELS,
+                          rate=RATE,
+                          output=True)
     framectr = 0
     
     def startProtocol(self):
@@ -32,24 +34,28 @@ class EchoClientDatagramProtocol(DatagramProtocol):
         self.sendDatagram()
     
     def sendDatagram(self):
-        print self.framectr
-        if self.framectr <= 10: #int(RATE / CHUNK * RECORD_SECONDS):#if len(self.strings):
-            data = ' ' #self.inputStream.read(CHUNK)
+        #print self.framectr
+        if self.framectr <= int(RATE / CHUNK * RECORD_SECONDS):#if len(self.strings):
+            data = self.inputStream.read(CHUNK)            
+            if self.framectr == 1:
+                buff = np.frombuffer(datagram, dtype=np.float64)
+                drawfft(buff)
+            #print buff
             self.transport.write(data)
         else:
-            reactor.stop()
             self.inputStream.stop_stream()
             self.inputStream.close()
-            #self.outputStream.stop_stream()
-            #self.outputStream.close()
+            self.outputStream.stop_stream()
+            self.outputStream.close()
             self.p.terminate()
+            reactor.stop()
         self.framectr += 1
 
     def datagramReceived(self, datagram, host):
         #print 'Datagram received: ', repr(datagram)
         if self.outputStream:
-            #self.outputStream.write(datagram)
-            self.sendDatagram()
+            self.outputStream.write(datagram)
+        self.sendDatagram()
 
 def main():
     protocol = EchoClientDatagramProtocol()
