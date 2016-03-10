@@ -28,7 +28,7 @@ def plotamp(signals, xmin = 0, xmax = 0):
         xi, xl = (xmin, xmax);
     else:
         xi, xl = (0, -1);
-    print xi, xl
+    print(xi, xl)
     for i in signals:
         plt.plot(x[xi: xl],i[xi: xl])
     plt.show()
@@ -62,7 +62,7 @@ def qpsk_modulate(signal, p = 100, sampling = 1, E=1):
 
 def qpsk_demodulate(modsig, p = 100, sampling = 1, E=1):    
     times = sampling
-    nosdata = len(modsig)/(p*times)
+    nosdata = (len(modsig) - len(modsig)%(p*times))/(p*times)
     Scarrier = np.array([E * sin((2*pi/p) * i) for i in range(p*times)], dtype=np.float)
     Ccarrier = np.array([E * cos((2*pi/p) * i) for i in range(p*times)], dtype=np.float)
     val = []
