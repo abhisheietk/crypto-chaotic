@@ -5,7 +5,7 @@ import wave
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
 import numpy as np
-from modulation import drawfft
+from crypto_chaotic.modulation import drawfft
 
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
@@ -38,9 +38,9 @@ class EchoClientDatagramProtocol(DatagramProtocol):
         if self.framectr <= int(RATE / CHUNK * RECORD_SECONDS):#if len(self.strings):
             data = self.inputStream.read(CHUNK)            
             if self.framectr == 1:
-                buff = np.frombuffer(datagram, dtype=np.float64)
-                drawfft(buff)
-            #print buff
+                buff = np.fromstring(data,dtype=np.int16)
+            #    drawfft(buff)
+                print buff
             self.transport.write(data)
         else:
             self.inputStream.stop_stream()

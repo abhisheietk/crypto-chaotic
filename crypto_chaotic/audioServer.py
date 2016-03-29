@@ -9,7 +9,7 @@ from twisted.internet import reactor
 # Here's a UDP version of the simplest possible protocol
 class EchoUDP(DatagramProtocol):
     def datagramReceived(self, datagram, address):
-        print datagram
+        #print datagram
         self.transport.write(datagram, address)
 
 def main():
