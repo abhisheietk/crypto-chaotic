@@ -1,19 +1,17 @@
 import numpy as np
 from math import sin, cos, sqrt
 
+rho=25
+sigma=10
+beta=1.5
+
 def deriv_send(xdot, x):
-    rho=25
-    sigma=10
-    beta=1.5
     xdot[0]=sigma * (x[1] - x[0])
     xdot[1]=x[0] * rho - x[1] - x[0] * x[2]
     xdot[2]=x[0] * x[1] - beta * x[2]
     return 0
 
 def deriv_receive(xdot, x, xp):
-    rho=25
-    sigma=10
-    beta=1.5
     xdot[0]=sigma * (x[1] - x[0])
     xdot[1]=xp * rho - x[1] - xp * x[2]
     xdot[2]=xp * x[1] - beta * x[2]
@@ -116,7 +114,7 @@ def chaos_decrypt(encryptedx, N = 3, tstep = 0.0001, ndrop = 15000):
 
 
 
-def chaos_commn(N = 3 , nosdata = 40000):    
+def chaos_commn(N = 3 , nosdata = 40000, tstep = 0.0001, ndrop = 15000):    
     
     signal = np.zeros(nosdata, dtype=np.float64)
     
@@ -124,8 +122,8 @@ def chaos_commn(N = 3 , nosdata = 40000):
         signal[i] = (1.5 * sin(0.01 * i) + 
                      1.0 * sin(0.01 * sqrt(2.0) * i))
         
-    encryptedx, xt = chaos_encrypt(signal, N = 3, tsteps = 0.0001)    
+    encryptedx, xt = chaos_encrypt(signal, N = N, tstep = tstep, ndrop = ndrop)    
     
-    recovered, xr = chaos_decrypt(encryptedx, N = 3, tsteps = 0.0001)
+    recovered, xr = chaos_decrypt(encryptedx, N = N, tstep = tstep, ndrop = ndrop)
         
     return (signal, encryptedx, recovered, xt, xr)

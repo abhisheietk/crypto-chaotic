@@ -1,7 +1,11 @@
 /opt/pypy/site-packages/crypto_chaotic/__init__.py
+/opt/pypy/site-packages/crypto_chaotic/audioClient.py
 /opt/pypy/site-packages/crypto_chaotic/modulation.py
+/opt/pypy/site-packages/crypto_chaotic/audioServer.py
 /opt/pypy/site-packages/crypto_chaotic/lorenz_attractor.py
 /opt/pypy/site-packages/crypto_chaotic/__init__.pyc
+/opt/pypy/site-packages/crypto_chaotic/audioClient.pyc
 /opt/pypy/site-packages/crypto_chaotic/modulation.pyc
+/opt/pypy/site-packages/crypto_chaotic/audioServer.pyc
 /opt/pypy/site-packages/crypto_chaotic/lorenz_attractor.pyc
 /opt/pypy/site-packages/crypto_chaotic-0.1.0-py2.7.egg-info
