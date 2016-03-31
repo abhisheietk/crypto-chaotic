@@ -19,7 +19,7 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
-RECORD_SECONDS = 20
+RECORD_SECONDS = 60*60
 
 tstep = 0.01
 ndrop = 1500
@@ -51,7 +51,8 @@ class EchoUDP(DatagramProtocol):
     
     def sendDatagram(self, datagram, address):
         #print self.framectr
-        if self.sndframectr <= int(RATE / CHUNK * RECORD_SECONDS):#if len(self.strings):
+        #print (RATE / CHUNK)*RECORD_SECONDS
+        if self.sndframectr <= int((RATE / CHUNK) * RECORD_SECONDS):#if len(self.strings):
             if self.sndframectr == 0:
                 data = np.zeros(CHUNK, dtype=np.int16).tostring()
             else:
@@ -93,8 +94,8 @@ class EchoUDP(DatagramProtocol):
             if self.sndframectr == 0:
                 encryptedx, xt = lorenz_attractor.chaos_encrypt(np.zeros(CHUNK, dtype=np.float64), 
                                                                 N = N, tstep = tstep, ndrop = ndrop)
-                print 'encryptedx:', len(encryptedx)
-                print len(xt)
+                #print 'encryptedx:', len(encryptedx)
+                #print len(xt)
                 self.xt = np.append(xt[-CHUNK/2:], xt[-CHUNK/2:])
                 data = self.inputStream.read(0)
                 self.inputStream.start_stream()
@@ -162,8 +163,9 @@ class EchoUDP(DatagramProtocol):
         self.rcut_signal0 = irfft(cut_f_signal)
         cut_signal = np.array(self.rcut_signal0.astype(int), dtype=np.int16)
 
-        if self.outputStream:
-            self.outputStream.write(cut_signal.tostring())
+        audiobuff = cut_signal.tostring()
+        if self.outputStream and len(audiobuff) == 2*CHUNK:
+            self.outputStream.write(audiobuff)
         self.rcvframectr += 1
             
 def main():
