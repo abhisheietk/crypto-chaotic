@@ -30,7 +30,7 @@ class EchoClientDatagramProtocol(DatagramProtocol):
     framectr = 0
     
     def startProtocol(self):
-        self.transport.connect('127.0.0.1', 8000)
+        self.transport.connect('31.12.5.214', 8000)
         self.sendDatagram()
     
     def sendDatagram(self):
