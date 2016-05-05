@@ -1,0 +1,25 @@
+gst-launch -e pulsesrc device="alsa_input.pci-0000_00_1b.0.analog-stereo" ! audioconvert ! \
+lamemp3enc target=1 bitrate=24 cbr=true ! filesink location=audio.mp3    
+
+gst-launch -e pulsesrc device="alsa_input.pci-0000_00_1b.0.analog-stereo" ! audioconvert ! \
+lamemp3enc target=1 bitrate=24 cbr=true ! udpsink host=localhost port=5000 sync=false  
+
+gst-launch  udpsrc  port=5000 ! audioconvert ! lamemp3dec target=1 bitrate=24 cbr=true ! \
+alsasink sync=false
+
+
+pactl list | grep -A2 'Source #' | grep 'Name: ' | cut -d" " -f2
+
+# Working
+gst-launch -e pulsesrc ! pulsesink sync=false
+
+# Working
+gst-launch -e pulsesrc ! audioconvert ! audioresample ! vorbisenc ! vorbisdec ! audioconvert ! pulsesink sync=false
+
+
+gst-launch -e udpsrc port=8000 ! vorbisdec ! audioconvert ! pulsesink sync=false
+
+gst-launch -e pulsesrc ! audioconvert ! audioresample ! vorbisenc ! udpsink host=localhost port=8000 sync=false
+
+# Working
+gst-launch-0.10 -v udpsrc port=3000 ! mad ! pulsesink  audiotestsrc ! audioconvert ! lame bitrate=192 ! udpsink port=3000 host=127.0.0.1
