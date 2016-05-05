@@ -71,9 +71,16 @@ doc/.ipynb_checkpoints/
 *.vcd
 /build
 /dist
-/src/signal_recovered.dat
+*.dat
 /src/chaos
-/doc/abh/signal_recovered.dat
 /doc/abh/cout
 /doc/abh/fout
-/doc/doc/Calling Fortran from Python_files/madel.png
+*.png
+*.wav
+*.ogg
+*.ogv
+*.oga
+*.flac
+*.mp3
+*.m4a
+*.wma
