@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import numpy as np
 from math import sin, cos, sqrt, pi
+from random import randrange
+from scipy.fftpack import rfft, irfft, fftfreq
+import scipy
 
 class Lorenz_Attractor:
     def __init__(self,N = 3, tstep = 0.0001, ndrop = 15000, 
@@ -196,8 +199,8 @@ class Modulation:
         #########################################
         ###         Frequency Domain          ###
         #########################################
-        W = scipy.fftpack.fftfreq(signal.size, d=1)
-        f_signal = scipy.fftpack.rfft(signal)
+        W = fftfreq(signal.size, d=1)
+        f_signal = rfft(signal)
 
         #########################################
         ###              Filter               ###
@@ -210,7 +213,7 @@ class Modulation:
         #########################################
         ###            Time Domain            ###
         #########################################
-        modsig_cut_signal = scipy.fftpack.irfft(cut_f_signal)
+        modsig_cut_signal = irfft(cut_f_signal)
         return modsig_cut_signal
 
         
@@ -267,7 +270,7 @@ class Modulation:
     
 class crypto:
     def __init__(self):     
-        nosdata = 16 #00
+        self.nosdata = 16 #00
         p = 80
         E = 1.0
         sampling = 12 #5
@@ -297,21 +300,20 @@ class crypto:
         self.encbuff = ''
 
     def encrypt(self, buff):
-        '''
-        enc_buff = []
-        tbuff = []
-        if len(buff) > nosdata:
-            for i in int(len(buff)/nosdata):
-                enc_buff.append(buff[(i+1)*nosdata:i*nosdata])
-            buff = buff[-len(buff)%nosdata:]
-            
-            for i in enc_buff:
-                self.encbuff += i
-                
-                
-        return enc_buff, buff'''
-                
-        return buff
+        sigarray =  np.split(buff, len(buff)/self.nosdata)
+        for i in sigarray:
+            #########################################
+            ###          QPSK Modulation          ###
+            #########################################
+            modsig = self.modulation.qpsk_modulate(i)
+            #########################################
+            ###           Chaos Encrypt           ###
+            #########################################
+            encryptedx, xt = self.lorenz_attractor.chaos_encrypt_block(modsig)
+            encsig = np.append(encsig, encryptedx)
+        print 'encsig', len(encsig)
+        return encsig
+    
     def decrypt(self, buff):
         return buff
     
@@ -329,18 +331,17 @@ REMOTE_HOST = '127.0.0.1'
 REMOTE_PORT = 5000
 
 Crypto = crypto()
-# Here's a UDP version of the simplest possible protocol
+
 class EchoUDP(DatagramProtocol):
     def __init__(self):
         self.inbuff = ""
         self.inwardbuff = np.array([], dtype=np.uint64)
     
     def datagramReceived(self, datagram, (host, port)):
-        self.inbuff += datagram
         self.inwardbuff = np.fromstring(datagram, dtype=np.uint64)
         
         #decrypted = Crypto.decrypt(datagram) #self.inbuff)            
-        self.transport.write(self.inwardbuff.tobytes(), (LOCAL_HOST, GST_PORT))
+        self.transport.write(self.inwardbuff.tostring(), (LOCAL_HOST, GST_PORT))
 
 class gstreamerUDP(DatagramProtocol):
     def __init__(self):
@@ -348,25 +349,17 @@ class gstreamerUDP(DatagramProtocol):
         self.outwardbuff = np.array([], dtype=np.uint64)
     
     def datagramReceived(self, datagram, (host, port)):
-        self.outbuff += datagram
-        print len(self.outbuff), len(self.outbuff)%8
-        print len(self.outbuff[:-(len(self.outbuff)%8)])
-        #print len(self.outbuff[:-(len(self.outbuff)%8)])%8
-        
+        self.outbuff += datagram        
         if len(self.outbuff) > 8:
             self.outwardbuff = np.append(self.outwardbuff, 
                                          np.fromstring(self.outbuff[:-(len(self.outbuff)%8)], dtype=np.uint64))
-            #print len(self.outwardbuff)
             self.outbuff = self.outbuff[-(len(self.outbuff)%8):]  
             
-        print len(self.outbuff)
-        print 'outwardbuff', len(self.outwardbuff)
         for i in range(int(len(self.outwardbuff)/64)):
-            #encrypted = Crypto.encrypt(outwardbuff)
-            pkt = self.outwardbuff[(i+1)*64:i*64]
-            self.transport.write(pkt.tobytes(), (REMOTE_HOST, REMOTE_PORT))
+            pkt = np.array(self.outwardbuff[i*64:(i+1)*64], dtype=np.uint64)
+            encrypted = Crypto.encrypt(pkt)
+            self.transport.write(encrypted.tostring(), (REMOTE_HOST, REMOTE_PORT))
         self.outwardbuff = self.outwardbuff[-(len(self.outwardbuff)%64):]
-        print 'outwardbuff', len(self.outwardbuff)
 
             
 def main():
