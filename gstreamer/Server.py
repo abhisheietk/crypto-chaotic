@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import numpy as np
 from math import sin, cos, sqrt, pi
 from random import randrange
@@ -207,8 +207,8 @@ class Modulation:
         #########################################
         cut_f_signal = f_signal.copy()
         #print (W<0.5/p)
-        cut_f_signal[(W>(2.0/p)+self.filter_del)] = 0
-        cut_f_signal[(W<(2.0/p)-self.filter_del)] = 0
+        cut_f_signal[(W>(2.0/self.p)+self.filter_del)] = 0
+        cut_f_signal[(W<(2.0/self.p)-self.filter_del)] = 0
 
         #########################################
         ###            Time Domain            ###
@@ -301,6 +301,7 @@ class crypto:
 
     def encrypt(self, buff):
         sigarray =  np.split(buff, len(buff)/self.nosdata)
+        encsig = np.array([], dtype=np.uint64)
         for i in sigarray:
             #########################################
             ###          QPSK Modulation          ###
@@ -357,7 +358,11 @@ class gstreamerUDP(DatagramProtocol):
             
         for i in range(int(len(self.outwardbuff)/64)):
             pkt = np.array(self.outwardbuff[i*64:(i+1)*64], dtype=np.uint64)
+            print "$$$$$$$$$$$$$$$"
+            print len(pkt)
             encrypted = Crypto.encrypt(pkt)
+            print len(encrypted), len(encrypted)/len(pkt)
+            print "$$$$$$$$$$$$$$$"
             self.transport.write(encrypted.tostring(), (REMOTE_HOST, REMOTE_PORT))
         self.outwardbuff = self.outwardbuff[-(len(self.outwardbuff)%64):]
 
