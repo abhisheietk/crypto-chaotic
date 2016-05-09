@@ -4,6 +4,11 @@ from math import sin, cos, sqrt, pi
 from random import randrange
 from scipy.fftpack import rfft, irfft, fftfreq
 import scipy
+from Queue import Queue
+from threading import Thread
+import time
+from twisted.internet.protocol import DatagramProtocol
+from twisted.internet import reactor
 
 class Lorenz_Attractor:
     def __init__(self,N = 3, tstep = 0.0001, ndrop = 15000, 
@@ -109,7 +114,7 @@ class Lorenz_Attractor:
             xt = self.pre_generate(nosdata)
         else:
             xt = np.tile(self.xt, nosdata/self.blocksize)
-            print len(xt), len(self.xt), nosdata, self.blocksize
+            #print len(xt), len(self.xt), nosdata, self.blocksize
             
         for i in range(nosdata):
             encryptedx[i] =  signal[i] + xt[i]
@@ -235,9 +240,9 @@ class Modulation:
                     C = self.Ccarrier
                 modsig = np.append(modsig, S + C)
                 sig = sig >> 2
-        print '###'
-        print len(self.NScarrier)*33*10
-        print len(modsig)
+        #print '###'
+        #print len(self.NScarrier)*33*10
+        #print len(modsig)
         return self.filter_signal(modsig)
 
 
@@ -312,26 +317,75 @@ class crypto:
             #########################################
             encryptedx, xt = self.lorenz_attractor.chaos_encrypt_block(modsig)
             encsig = np.append(encsig, encryptedx)
-        print 'encsig', len(encsig)
+        #print 'encsig', len(encsig)
         return encsig
     
     def decrypt(self, buff):
+        dmodsig = np.array([], dtype=np.uint64)
+        for i in buff:
+            #########################################
+            ###           Chaos Decrypt           ###
+            #########################################
+            recovered, xr = lorenz_attractor.chaos_decrypt_block(i)
+
+            #########################################
+            ###        QPSK Demodulation          ###
+            #########################################
+            #print len(recovered)
+            dmodsig1 = modulation.qpsk_demodulate(recovered)
+            dmodsig = np.append(dmodsig, dmodsig1)
         return buff
     
-#!/usr/bin/env python
-
-# Copyright (c) Twisted Matrix Laboratories.
-# See LICENSE for details.
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
 
 LOCAL_HOST = '127.0.0.1'
 LOCAL_PORT = 3000
-GST_PORT = 3001
+LOCAL_PORT_1 = 5000
+GST_PORT = 3002
 REMOTE_HOST = '127.0.0.1'
-REMOTE_PORT = 5000
+REMOTE_PORT = 5001
 
 Crypto = crypto()
+
+#enc_in_queue = Queue()
+dec_in_queue = Queue()
+#enc_out_queue = Queue()
+dec_out_queue = Queue()
+
+'''def encryptWorker(enc_in_queue, enc_out_queue):
+    outbuff = ""
+    outwardbuff = np.array([], dtype=np.uint64)
+    while True:
+        outbuff += enc_in_queue.get()      
+        if len(outbuff) > 8:
+            outwardbuff = np.append(outwardbuff, 
+                                         np.fromstring(outbuff[:-(len(outbuff)%8)], dtype=np.uint64))
+            outbuff = outbuff[-(len(outbuff)%8):]  
+            
+        for i in range(int(len(outwardbuff)/64)):
+            pkt = np.array(outwardbuff[i*64:(i+1)*64], dtype=np.uint64)
+            print "$$$$$$$$$$$$$$$"
+            print len(pkt)
+            encrypted = Crypto.encrypt(pkt)
+            #print len(encrypted), len(encrypted)/len(pkt)
+            npkt = np.split(encrypted, len(encrypted)/64)
+            enc_out_queue.put(npkt)
+            #for j in npkt:
+                
+            #    self.transport.write(j.tostring(), (REMOTE_HOST, REMOTE_PORT))
+            #self.transport.write(pkt.tostring(), (REMOTE_HOST, REMOTE_PORT))
+        outwardbuff = outwardbuff[-(len(outwardbuff)%64):]
+
+        print len(job)
+        enc_in_queue.task_done()'''
+        
+def decryptWorker(dec_in_queue, dec_out_queue):
+    while True:
+        #print 'decrypt: Looking for job'
+        job = dec_in_queue.get()
+        print len(job)
+        dec_out_queue.put(job)
+        dec_in_queue.task_done()
+
 
 class EchoUDP(DatagramProtocol):
     def __init__(self):
@@ -339,38 +393,80 @@ class EchoUDP(DatagramProtocol):
         self.inwardbuff = np.array([], dtype=np.uint64)
     
     def datagramReceived(self, datagram, (host, port)):
-        self.inwardbuff = np.fromstring(datagram, dtype=np.uint64)
-        
-        #decrypted = Crypto.decrypt(datagram) #self.inbuff)            
-        self.transport.write(self.inwardbuff.tostring(), (LOCAL_HOST, GST_PORT))
+        print '$', len(datagram), type(datagram)
+        dec_in_queue.put(datagram)
+        data = dec_out_queue.get()
+        print '@', len(data)
+        self.transport.write(data, (LOCAL_HOST, GST_PORT))
+        '''self.inwardbuff = np.append(self.inwardbuff, np.fromstring(datagram, dtype=np.uint64))
+        print '$$'
+        print len(self.inwardbuff)
+        if len(self.inwardbuff) == 2027520:
+            decrypted = Crypto.decrypt(self.inwardbuff)  
+            self.inwardbuff = np.array([], dtype=np.uint64)
+        self.transport.write(decrypted.tostring(), (LOCAL_HOST, GST_PORT))
+        #self.transport.write(self.inwardbuff.tostring(), (LOCAL_HOST, GST_PORT))'''
 
 class gstreamerUDP(DatagramProtocol):
     def __init__(self):
         self.outbuff = ""
         self.outwardbuff = np.array([], dtype=np.uint64)
+        self.enc_in_queue = Queue()
+        self.enc_out_queue = Queue()
+        self.encworker = Thread(target=self.encryptWorker, args=(self.enc_in_queue, self.enc_out_queue))
+        self.encworker.setDaemon(True)
+        self.encworker.start()
+    
+    
+    def encryptWorker(self, enc_in_queue, enc_out_queue):
+        outbuff = ""
+        outwardbuff = np.array([], dtype=np.uint64)
+        while True:
+            npkt = '' #np.array([], dtype=np.uint64)
+            outbuff += self.enc_in_queue.get()      
+            if len(outbuff) > 8:
+                outwardbuff = np.append(outwardbuff, 
+                                             np.fromstring(outbuff[:-(len(outbuff)%8)], dtype=np.uint64))
+                outbuff = outbuff[-(len(outbuff)%8):]  
+
+            for i in range(int(len(outwardbuff)/64)):
+                pkt = np.array(outwardbuff[i*64:(i+1)*64], dtype=np.uint64)
+                print "$$$$$$$$$$$$$$$"
+                print len(pkt)
+                encrypted = Crypto.encrypt(pkt)
+                #print len(encrypted), len(encrypted)/len(pkt)
+                npkt += encrypted.tostring()
+                
+                #for j in npkt:
+
+                #    self.transport.write(j.tostring(), (REMOTE_HOST, REMOTE_PORT))
+                #self.transport.write(pkt.tostring(), (REMOTE_HOST, REMOTE_PORT))
+            self.enc_out_queue.put(npkt)
+            outwardbuff = outwardbuff[-(len(outwardbuff)%64):]
+            self.enc_in_queue.task_done()
+
     
     def datagramReceived(self, datagram, (host, port)):
-        self.outbuff += datagram        
-        if len(self.outbuff) > 8:
-            self.outwardbuff = np.append(self.outwardbuff, 
-                                         np.fromstring(self.outbuff[:-(len(self.outbuff)%8)], dtype=np.uint64))
-            self.outbuff = self.outbuff[-(len(self.outbuff)%8):]  
-            
-        for i in range(int(len(self.outwardbuff)/64)):
-            pkt = np.array(self.outwardbuff[i*64:(i+1)*64], dtype=np.uint64)
-            print "$$$$$$$$$$$$$$$"
-            print len(pkt)
-            encrypted = Crypto.encrypt(pkt)
-            print len(encrypted), len(encrypted)/len(pkt)
-            print "$$$$$$$$$$$$$$$"
-            self.transport.write(encrypted.tostring(), (REMOTE_HOST, REMOTE_PORT))
-        self.outwardbuff = self.outwardbuff[-(len(self.outwardbuff)%64):]
-
+        print '!', len(datagram), type(datagram)
+        self.enc_in_queue.put(datagram)
+        data = self.enc_out_queue.get()
+        print '#', len(data), type(data)
+        for i in range(len(data)/512):
+            self.transport.write(data[i*512:(i+1)*512], (REMOTE_HOST, REMOTE_PORT))
+        
             
 def main():
+    decworker = Thread(target=decryptWorker, args=(dec_in_queue, dec_out_queue))
+    decworker.setDaemon(True)
+    decworker.start()
+
     reactor.listenUDP(LOCAL_PORT, gstreamerUDP())
-    reactor.listenUDP(REMOTE_PORT, EchoUDP())
+    reactor.listenUDP(LOCAL_PORT_1, EchoUDP())
     reactor.run()
+    #enc_in_queue.join()
+    #dec_in_queue.join()
+    enc_out_queue.join()
+    dec_out_queue.join()
 
 if __name__ == '__main__':
     main()
