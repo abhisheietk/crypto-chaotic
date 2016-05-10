@@ -18,6 +18,7 @@ class Lorenz_Attractor:
         self.blocksize = blocksize
         if self.pregen:
             self.xt = self.pre_generate(self.blocksize)
+        
         self.xrgen_called = 0
 
     def deriv_send(self, xdot, x):
@@ -127,14 +128,17 @@ class Lorenz_Attractor:
             #print 'chaos offline generation'
             xt = self.xt
             
+            
         xt = np.tile(xt, nosdata/self.blocksize)
-        
+
+        #print '##', len(encryptedx)        
         encryptedx =  signal + xt
 
         return encryptedx, xt
 
     def pre_generate_xr(self, encryptedx):        
         xr = np.zeros(len(encryptedx), dtype=np.float64)
+        print len(xr), len(encryptedx)
         
         xold = np.random.uniform(0, 1, size=self.N)
         for i in range(self.ndrop):
@@ -167,6 +171,7 @@ class Lorenz_Attractor:
         elif self.xrgen_called == 0:
             print 'chaos offline syncronisation'
             self.xrgen_called = 1
+            print self.blocksize, len(encryptedx)
             self.xr = self.pre_generate_xr(encryptedx[:self.blocksize])
             xr = np.tile(self.xr, nosdata/self.blocksize)
         else:

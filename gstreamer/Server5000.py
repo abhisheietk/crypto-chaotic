@@ -9,7 +9,7 @@ from threading import Thread
 import time
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor   
-from crypto import crypto      
+from crypto import crypto, drawfft, plotamp
 
 LOCAL_HOST = '127.0.0.1'
 LOCAL_PORT = 3000
@@ -35,9 +35,9 @@ class EchoUDP(DatagramProtocol):
         decrypted = np.array([], dtype=np.uint64)
         while True:
             inwardbuff = np.append(inwardbuff, np.fromstring(self.dec_in_queue.get(), dtype=np.uint64))
-            #print len(inwardbuff)
+            print '$$', len(inwardbuff)
             if len(inwardbuff) == 2027520:
-                #print len(inwardbuff)
+                print len(inwardbuff)
                 decrypted = Crypto.decrypt(inwardbuff)  
                 inwardbuff = np.array([], dtype=np.uint64)
                 #print len(decrypted)
@@ -45,8 +45,8 @@ class EchoUDP(DatagramProtocol):
             self.dec_in_queue.task_done()
 
     def datagramReceived(self, datagram, (host, port)):
-        #print '$', len(datagram), type(datagram)
-        self.dec_in_queue.put(datagram)
+        print ord(datagram[0]) + ord(datagram[0])*256
+        self.dec_in_queue.put(datagram[2:])
         if not self.dec_out_queue.empty():
             data = self.dec_out_queue.get()
             print '@', len(data)
@@ -95,7 +95,9 @@ class gstreamerUDP(DatagramProtocol):
             data = self.enc_out_queue.get()
             #print '$$$$', len(data), type(data)
             for i in range(len(data)/512):
-                self.transport.write(data[i*512:(i+1)*512], (REMOTE_HOST, REMOTE_PORT))
+                pkt = chr((i&0xFF)) + chr(((i >> 8)&0xFF)) + data[i*512:(i+1)*512]
+                #print ord(pkt[0]) , ord(pkt[1]) , ord(pkt[2]) , ord(pkt[3])
+                self.transport.write(pkt, (REMOTE_HOST, REMOTE_PORT))
         
             
 def main():
