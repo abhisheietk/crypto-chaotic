@@ -44,7 +44,7 @@ class crypto:
         sampling = 12 #5
         filter_del = 0.0029
         blocksize = p*sampling*33
-        print blocksize
+        #print blocksize
 
         tstep = 0.01
         ndrop = 150 #15000
@@ -70,11 +70,8 @@ class crypto:
         self.blocksize = blocksize
 
     def encrypt(self, buff):
-        print "###########"
-        print len(buff)
-        print self.nosdata
+        #print "###########"
         sigarray =  np.split(buff, len(buff)/self.nosdata)
-        print len(sigarray)
         encsig = np.array([], dtype=np.uint64)
         for i in sigarray:
             #########################################
@@ -85,17 +82,17 @@ class crypto:
             ###           Chaos Encrypt           ###
             #########################################
             encryptedx, xt = self.lorenz_attractor.chaos_encrypt_block(modsig)
-            print len(encryptedx)
+            #print len(encryptedx)
             encsig = np.append(encsig, encryptedx)
         #print 'encsig', len(encsig)
         
-        print len(encsig)
-        print "###########"
-        return encsig
+        #print len(encsig)
+        #print "###########"
+        return encsig #, xt, encryptedx
     
     def decrypt(self, buff):
-        print "###########"
-        print len(buff)
+        #print "###########"
+        #print len(buff)
         dmodsig = np.array([], dtype=np.uint64)
         #########################################
         ###           Chaos Decrypt           ###
@@ -107,7 +104,7 @@ class crypto:
         #########################################
         #print len(recovered)
         dmodsig = self.modulation.qpsk_demodulate(recovered)
-        print len(dmodsig)
-        print "###########"
-        return dmodsig
+        #print len(dmodsig)
+        #print "###########"
+        return dmodsig #, xr, recovered
     

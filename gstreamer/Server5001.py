@@ -31,15 +31,15 @@ class EchoUDP(DatagramProtocol):
 
     def decryptWorker(self, dec_in_queue, dec_out_queue):
         inbuff = {}
-        inwardbuff = np.array([], dtype=np.uint64)
+        inwardbuff = np.array([], dtype=np.float)
         decrypted = np.array([], dtype=np.uint64)
         while True:
-            inwardbuff = np.append(inwardbuff, np.fromstring(self.dec_in_queue.get(), dtype=np.uint64))
+            inwardbuff = np.append(inwardbuff, np.fromstring(self.dec_in_queue.get(), dtype=np.float))
             #print len(inwardbuff)
             if len(inwardbuff) == 506880:
                 print len(inwardbuff)
                 decrypted = Crypto.decrypt(inwardbuff)  
-                inwardbuff = np.array([], dtype=np.uint64)
+                inwardbuff = np.array([], dtype=np.float)
                 print decrypted
                 self.dec_out_queue.put(decrypted.tostring())
             self.dec_in_queue.task_done()

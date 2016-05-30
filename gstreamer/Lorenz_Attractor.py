@@ -102,7 +102,7 @@ class Lorenz_Attractor:
         return xt
 
     def chaos_encrypt(self, signal):
-        nosdata = len(signal)
+        #nosdata = len(signal)
         encryptedx = np.zeros(nosdata, dtype=np.float64)
 
         if not self.pregen:
@@ -138,7 +138,7 @@ class Lorenz_Attractor:
 
     def pre_generate_xr(self, encryptedx):        
         xr = np.zeros(len(encryptedx), dtype=np.float64)
-        print len(xr), len(encryptedx)
+        #print len(xr), len(encryptedx)
         
         xold = np.random.uniform(0, 1, size=self.N)
         for i in range(self.ndrop):
@@ -171,7 +171,7 @@ class Lorenz_Attractor:
         elif self.xrgen_called == 0:
             print 'chaos offline syncronisation'
             self.xrgen_called = 1
-            print self.blocksize, len(encryptedx)
+            #print self.blocksize, len(encryptedx)
             self.xr = self.pre_generate_xr(encryptedx[:self.blocksize])
             xr = np.tile(self.xr, nosdata/self.blocksize)
         else:
